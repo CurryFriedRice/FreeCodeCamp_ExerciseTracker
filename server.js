@@ -122,7 +122,7 @@ app.get("/api/users/:_id/logs/:from?/:to?/:limit?", function(req,res){
   var fetchedUser = findUser(req.params._id);
   //console.log(fetchedUser);
   var logData = fetchedUser.log;
-  
+
   var from = new Date(req.params.from);
   var to = new Date(req.params.to); 
   var limit = parseInt(req.params.limit);
@@ -152,7 +152,7 @@ app.get("/api/users/:_id/logs/:from?/:to?/:limit?", function(req,res){
       id        : fetchedUser._id,
       username  : fetchedUser.username,
       log       : logData,
-      count     : logData.length
+      count     : parseInt(logData.length)
       }
     console.log(retVal);
       console.log(req.params);
