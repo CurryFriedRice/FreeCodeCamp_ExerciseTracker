@@ -4,7 +4,7 @@ const cors        = require('cors')
 const bodyParser  = require('body-parser'); 
 const dns         = require('dns');
 const app         = express();
-
+const uniqID      = require('uniqid');
 /*
 //user object
 const User = {
@@ -20,8 +20,77 @@ const Activity = {
     date        : _date;
     }
 */
-
-var userList = [];
+var testData = 
+{
+  username: "Leo",
+  _id :"test",
+  log : [
+  {
+    description: 'running in the 90s',
+    duration: 61,
+    date: new Date("1990-01-01")
+  },
+  { 
+    description: 'core', 
+    duration: 62, 
+    date: new Date() 
+    },
+  {
+    description: 'squats',
+    duration: 63,
+    date: new Date()
+  },
+    { 
+    description: 'core', 
+    duration: 64, 
+    date: new Date() 
+    },
+  {
+    description: 'squats',
+    duration: 65,
+    date: new Date()
+  },
+    { 
+    description: 'core', 
+    duration: 66, 
+    date: new Date() 
+    },
+  {
+    description: 'squats',
+    duration: 67,
+    date: new Date()
+  },  { 
+    description: 'core', 
+    duration: 68, 
+    date: new Date() 
+    },
+  {
+    description: 'squats',
+    duration: 69,
+    date: new Date()
+  },
+    { 
+    description: 'core', 
+    duration: 70, 
+    date: new Date() 
+    },
+  {
+    description: 'squats',
+    duration: 71,
+    date: new Date()
+  },  { 
+    description: 'core', 
+    duration: 73, 
+    date: new Date() 
+    },
+  {
+    description: 'squats',
+    duration: 74,
+    date: new Date()
+  },
+  ]
+};
+var userList = [testData];
 
 var uID = 0;
 
@@ -40,13 +109,61 @@ app.use(function middleware(req, res, next){
   console.log("Middleware Running");
   next();
 });
-
+/*
 app.get("/api/users/:_id/logs", function(req,res){ 
-  var tempID = req.params._id; 
   console.log("===USER LOGS===");
-  console.log(userList[tempID]);
-  res.json(userList[tempID].exercises);
+  var fetchedUser = findUser(req.params._id);
+  fetchedUser.count = fetchedUser.log.length;
+  res.json(fetchedUser);
 });
+*/
+app.get("/api/users/:_id/logs/:from?/:to?/:limit?", function(req,res){ 
+  console.log("===USER LOGS MORE LIMITS===");
+  var fetchedUser = findUser(req.params._id);
+  //console.log(fetchedUser);
+  var logData = fetchedUser.log;
+  
+  var from = new Date(req.params.from);
+  var to = new Date(req.params.to); 
+  var limit = parseInt(req.params.limit);
+  //console.log("LOG DATA PRE");
+  //console.log(logData);
+  if(!isNaN(from))
+      logData = logData.filter(data => {return data.date > from});    
+  
+  if (!isNaN(to))
+      logData = logData.filter(data => {return data.date < to});
+    /*
+    limitedLogData = limitedLogData.filter(function(exerciseItem){ 
+        return (exerciseItem.date > from && exerciseItem.date < to);
+      });
+    */
+      //console.log("PRUNING LIMITS");
+    if(!isNaN(limit)){
+        var i = 0;
+        logData = logData.filter(item => {if(i <limit){
+        i++; 
+        return item;
+      }});
+    }
+    console.log("LOG DATA POST");
+    console.log(logData);
+    var retVal = {
+      id        : fetchedUser._id,
+      username  : fetchedUser.username,
+      log       : logData,
+      count     : logData.length
+      }
+    console.log(retVal);
+      console.log(req.params);
+    res.json(retVal);
+    
+});
+
+function isBetween(itemDate, fromDate, toDate)
+{
+  return (itemDate > fromDate && itemDate <toDate);
+}
 
 app.get("/api/users", function(req,res){
   console.log("Fetching User List");
@@ -63,15 +180,12 @@ app.get("/api/users", function(req,res){
 app.post("/api/users", function(req, res){
   console.log("===CREATE USER===");
 
-
   var newUser = {
-    _id       : uID,
+    _id       : uniqID(),
     username  : req.body.username,
-    exercises : [],
+    log : [],
     }
-  uID ++;
   console.log(newUser);
-  console.log(newUser.exercises);
   userList.push(newUser);
   
   res.json(newUser);  
@@ -82,31 +196,28 @@ app.post("/api/users/:_id/exercises", function(req,res){
   //console.log(req.body.date);
   var _date = new Date(req.body.date);
   if(isNaN(_date.getTime())) _date = new Date();
-  /*
-  var activity = 
-  {
-    _id         : req.params._id, 
-    description : req.body.description, 
-    duration    : req.body.duration,
-    date        : _date
-  };
-  */
-  
-  var tempID = req.params._id;
+  var fetchedUser = findUser(req.params._id);
+
   var newActivity = {    
-    //_id         : 0, 
     description : req.body.description,
-    duration    : req.body.duration,
-    date        : _date,
-    } 
-  console.log("===USER ACTIVITY===")
-  console.log(newActivity);
+    duration    : parseInt(req.body.duration),
+    date        : _date.toDateString(),
+  }
+  console.log("===USER ACTIVITY===");
   //Add the exercise to the user
-  userList[tempID].exercises.push(newActivity);
-  res.json(userList[tempID]);
+  fetchedUser.log.push(newActivity);
+  console.log (fetchedUser);
+  console.log (findUser(req.params._id));
+  
+  res.json({
+    _id : req.params._id,
+    username : fetchedUser.username,
+    description : req.body.description,
+    duration : parseInt(req.body.duration),
+    date : _date.toDateString()
+  });
 
 });
-
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {
@@ -114,3 +225,8 @@ const listener = app.listen(process.env.PORT || 3000, () => {
 })
 
 
+function findUser(userId)
+{
+  //var profile = userList.find(target => target._id === userId);
+  return userList.find(target => target._id === userId);
+}
